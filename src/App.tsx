@@ -14,6 +14,7 @@ import { ClaudeFileEditor } from "@/components/ClaudeFileEditor";
 import { Settings } from "@/components/Settings";
 import { CCAgents } from "@/components/CCAgents";
 import { ClaudeCodeSession } from "@/components/ClaudeCodeSession";
+import { OpenCodeSession } from "@/components/OpenCodeSession";
 import { UsageDashboard } from "@/components/UsageDashboard";
 import { MCPManager } from "@/components/MCPManager";
 import { NFOCredits } from "@/components/NFOCredits";
@@ -27,6 +28,7 @@ type View =
   | "editor" 
   | "claude-file-editor" 
   | "claude-code-session" 
+  | "opencode-session"
   | "settings"
   | "cc-agents"
   | "create-agent"
@@ -219,7 +221,7 @@ function App() {
               </motion.div>
 
               {/* Navigation Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {/* CC Agents Card */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -250,6 +252,71 @@ function App() {
                     <div className="h-full flex flex-col items-center justify-center p-8">
                       <FolderCode className="h-16 w-16 mb-4 text-primary" />
                       <h2 className="text-xl font-semibold">CC Projects</h2>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* OpenCode Session Card */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <Card 
+                    className="h-64 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg border border-border/50 shimmer-hover trailing-border"
+                    onClick={() => handleViewChange("opencode-session")}
+                  >
+                    <div className="h-full flex flex-col items-center justify-center p-8">
+                      <div className="h-16 w-16 mb-4 text-primary flex items-center justify-center">
+                        <svg
+                          width="64"
+                          height="64"
+                          viewBox="0 0 64 64"
+                          fill="none"
+                          className="text-primary"
+                        >
+                          <rect
+                            x="8"
+                            y="16"
+                            width="48"
+                            height="32"
+                            rx="4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            fill="none"
+                          />
+                          <circle
+                            cx="16"
+                            cy="24"
+                            r="2"
+                            fill="currentColor"
+                          />
+                          <circle
+                            cx="24"
+                            cy="24"
+                            r="2"
+                            fill="currentColor"
+                          />
+                          <circle
+                            cx="32"
+                            cy="24"
+                            r="2"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M16 32 L24 40 L48 32"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                      <h2 className="text-xl font-semibold">OpenCode</h2>
+                      <p className="text-sm text-muted-foreground mt-2 text-center">
+                        Modern AI Assistant
+                      </p>
                     </div>
                   </Card>
                 </motion.div>
@@ -416,6 +483,17 @@ function App() {
               setActiveClaudeSessionId(sessionId);
             }}
             onProjectSettings={handleProjectSettingsFromPath}
+          />
+        );
+      
+      case "opencode-session":
+        return (
+          <OpenCodeSession
+            onBack={() => handleViewChange("welcome")}
+            onStreamingChange={(isStreaming, sessionId) => {
+              setIsClaudeStreaming(isStreaming);
+              setActiveClaudeSessionId(sessionId);
+            }}
           />
         );
       

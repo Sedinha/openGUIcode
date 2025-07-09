@@ -1,85 +1,40 @@
-# Build Scripts
+# Scripts de Automação (`scripts/`)
 
-This directory contains scripts for building Claude Code executables for all supported platforms.
+Este diretório contém scripts de automação usados para facilitar o processo de desenvolvimento, build e empacotamento da aplicação **openGUIcode (Claudia)**. Esses scripts são escritos em JavaScript/TypeScript e executados com [Bun](https://bun.sh/).
 
-## Scripts
+## Propósito
+
+O objetivo principal deste diretório é automatizar tarefas repetitivas e complexas, garantindo consistência e reduzindo a chance de erro humano. Eles são invocados através dos comandos definidos na seção `scripts` do arquivo `package.json`.
+
+## Scripts Notáveis
 
 ### `fetch-and-build.js`
-Main build script that:
-1. Downloads the `@anthropic-ai/claude-code` package from npm
-2. Extracts and copies required files (cli.js, yoga.wasm, vendor/)
-3. Builds executables for specified platforms
-4. Cleans up temporary files
 
-**Usage:**
-```bash
-# Build for all platforms
-bun run scripts/fetch-and-build.js
+Este é o script mais importante do diretório. Ele é responsável por baixar uma versão específica do `claude-code` (a CLI original) da npm, extrair os binários necessários (como `ripgrep`) e, em seguida, compilar o código do `claude-code` em um executável nativo para a plataforma de destino.
 
-# Build for specific platform
-bun run scripts/fetch-and-build.js linux
-bun run scripts/fetch-and-build.js macos
-bun run scripts/fetch-and-build.js windows
-bun run scripts/fetch-and-build.js current  # Current platform only
-```
+**Funcionalidades:**
+-   Baixa e descompacta pacotes npm.
+-   Copia seletivamente os binários e arquivos necessários.
+-   Usa o `bun build --compile` para criar executáveis nativos para diferentes plataformas (Linux, macOS, Windows).
+-   É usado nos hooks `predev` e `prebuild` do `package.json` para garantir que os binários necessários estejam disponíveis antes de rodar ou construir a aplicação Tauri.
 
 ### `build-executables.js`
-Low-level script that builds executables from existing source files. This is called automatically by `fetch-and-build.js`.
+
+Um script auxiliar, geralmente chamado por `fetch-and-build.js`, que contém a lógica específica para compilar os executáveis para diferentes alvos (ex: `x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`).
 
 ### `prepare-bundle-native.js`
-Prepares the CLI source for bundling by embedding assets using Bun's native embedding features.
 
-## NPM Scripts
+Este script prepara o código-fonte do `claude-code` para ser empacotado em um executável nativo. Ele pode realizar tarefas como:
+-   Modificar caminhos de arquivos para usar assets embutidos.
+-   Injetar código para carregar binários (como `ripgrep`) que foram empacotados dentro do executável principal.
 
-The following npm scripts are available in `package.json`:
+## Como Usar
 
-```bash
-# Build executables for all platforms
-npm run build:executables
+Os scripts não são projetados para serem chamados diretamente. Em vez disso, eles são executados através dos comandos do `package.json`.
 
-# Build for specific platforms
-npm run build:executables:current
-npm run build:executables:linux
-npm run build:executables:macos
-npm run build:executables:windows
-```
+**Exemplos de Comandos:**
 
-## Output
+-   `bun run build`: Este comando, antes de executar o `tsc && vite build`, primeiro roda o `prebuild`, que por sua vez chama `bun run build:executables:current`. Isso garante que os binários corretos para a sua plataforma estejam prontos antes do build final do Tauri.
+-   `bun run dev`: Da mesma forma, o `predev` garante que os binários estejam prontos antes de iniciar o servidor de desenvolvimento.
 
-All executables are created in the `src-tauri/binaries/` directory with the following naming convention:
-
-### Linux Executables
-- `claude-code-linux-x64` - Standard Linux x64 (glibc)
-- `claude-code-linux-x64-modern` - Modern CPUs (AVX2+)
-- `claude-code-linux-x64-baseline` - Older CPUs (pre-2013)
-- `claude-code-linux-arm64` - ARM64 Linux
-- `claude-code-linux-x64-musl` - Alpine Linux (musl)
-- `claude-code-linux-x64-musl-modern` - Alpine + modern CPUs
-- `claude-code-linux-x64-musl-baseline` - Alpine + older CPUs
-- `claude-code-linux-arm64-musl` - ARM64 Alpine
-
-### macOS Executables
-- `claude-code-macos-x64` - Intel Mac
-- `claude-code-macos-x64-modern` - Intel Mac (modern CPUs)
-- `claude-code-macos-x64-baseline` - Intel Mac (older CPUs)
-- `claude-code-macos-arm64` - Apple Silicon Mac
-
-### Windows Executables
-- `claude-code-windows-x64.exe` - Windows x64
-- `claude-code-windows-x64-modern.exe` - Windows x64 (modern CPUs)
-- `claude-code-windows-x64-baseline.exe` - Windows x64 (older CPUs)
-
-## Features
-
-- **Embedded Assets**: All executables include embedded yoga.wasm and ripgrep binaries
-- **Optimizations**: Built with minification and sourcemaps
-- **Cross-platform**: Supports all major operating systems and architectures
-- **CPU Variants**: Modern variants for newer CPUs (2013+), baseline for compatibility
-- **Self-contained**: No external dependencies required at runtime
-- **Tauri Integration**: Automatic sidecar binary naming for seamless Tauri integration
-
-## Requirements
-
-- **Bun**: Required for building (uses Bun's native compilation features)
-- **npm**: Used to download the Claude Code package
-- **tar**: For extracting the package (standard on Unix systems) 
+Esses scripts são uma parte crucial da pipeline de build, abstraindo a complexidade de empacotar uma aplicação que depende de binários externos e de um runtime de JavaScript como o Bun.

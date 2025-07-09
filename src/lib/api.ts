@@ -17,6 +17,90 @@ export interface ProcessInfo {
   model: string;
 }
 
+// OpenCode types
+export interface OpenCodeServerInfo {
+  port: number;
+  hostname: string;
+  pid?: number;
+  status: "Starting" | "Running" | "Stopped" | { Error: string };
+  base_url: string;
+}
+
+export interface OpenCodeSession {
+  id: string;
+  parentID?: string;
+  share?: { url: string };
+  title: string;
+  version: string;
+  time: { created: number; updated: number };
+  revert?: {
+    messageID: string;
+    part: number;
+    snapshot?: string;
+  };
+}
+
+export interface OpenCodeMessage {
+  id: string;
+  role: string;
+  sessionID: string;
+  parts: OpenCodeMessagePart[];
+  time: { created: number; updated?: number };
+  modelID?: string;
+  providerID?: string;
+  cost?: number;
+  tokens?: {
+    input: number;
+    output: number;
+    reasoning: number;
+    cache: { read: number; write: number };
+  };
+  system?: string[];
+  path?: { cwd: string; root: string };
+  summary?: boolean;
+  error?: any;
+}
+
+export type OpenCodeMessagePart = 
+  | { type: "text"; text: string }
+  | { 
+      type: "tool"; 
+      tool: string; 
+      id: string; 
+      state: OpenCodeToolState; 
+    }
+  | { 
+      type: "file"; 
+      url: string; 
+      mime: string; 
+      filename: string; 
+    }
+  | { type: "step-start" };
+
+export type OpenCodeToolState = 
+  | { status: "pending" }
+  | { 
+      status: "running"; 
+      input: any; 
+      time: { start: number }; 
+      title?: string; 
+      metadata?: any; 
+    }
+  | { 
+      status: "completed"; 
+      input: any; 
+      output: string; 
+      time: { start: number; end?: number }; 
+      title?: string; 
+      metadata?: any; 
+    }
+  | { 
+      status: "error"; 
+      input?: any; 
+      error: string; 
+      time: { start: number; end?: number }; 
+    };
+
 /**
  * Represents a project in the ~/.claude/projects directory
  */
@@ -1833,6 +1917,195 @@ export const api = {
       return await invoke<string>("slash_command_delete", { commandId, projectPath });
     } catch (error) {
       console.error("Failed to delete slash command:", error);
+      throw error;
+    }
+  },
+
+  // OpenCode Integration API methods
+
+  /**
+   * Start the OpenCode server
+   * @returns Promise resolving to server information
+   */
+  async startOpenCodeServer(): Promise<OpenCodeServerInfo> {
+    try {
+      return await invoke<OpenCodeServerInfo>("start_opencode_server");
+    } catch (error) {
+      console.error("Failed to start OpenCode server:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Stop the OpenCode server
+   * @returns Promise resolving when server is stopped
+   */
+  async stopOpenCodeServer(): Promise<void> {
+    try {
+      return await invoke<void>("stop_opencode_server");
+    } catch (error) {
+      console.error("Failed to stop OpenCode server:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get current OpenCode server status
+   * @returns Promise resolving to server information or null if not running
+   */
+  async getOpenCodeServerStatus(): Promise<OpenCodeServerInfo | null> {
+    try {
+      return await invoke<OpenCodeServerInfo | null>("get_opencode_server_status");
+    } catch (error) {
+      console.error("Failed to get OpenCode server status:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new OpenCode session
+   * @returns Promise resolving to session information
+   */
+  async createOpenCodeSession(): Promise<OpenCodeSession> {
+    try {
+      return await invoke<OpenCodeSession>("create_opencode_session");
+    } catch (error) {
+      console.error("Failed to create OpenCode session:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * List all OpenCode sessions
+   * @returns Promise resolving to array of sessions
+   */
+  async listOpenCodeSessions(): Promise<OpenCodeSession[]> {
+    try {
+      return await invoke<OpenCodeSession[]>("list_opencode_sessions");
+    } catch (error) {
+      console.error("Failed to list OpenCode sessions:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get messages for an OpenCode session
+   * @param sessionId - Session ID
+   * @returns Promise resolving to array of messages
+   */
+  async getOpenCodeSessionMessages(sessionId: string): Promise<OpenCodeMessage[]> {
+    try {
+      return await invoke<OpenCodeMessage[]>("get_opencode_session_messages", { sessionId });
+    } catch (error) {
+      console.error("Failed to get OpenCode session messages:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Send a chat message to OpenCode
+   * @param sessionId - Session ID
+   * @param message - Message text
+   * @param providerId - AI provider ID
+   * @param modelId - Model ID
+   * @returns Promise resolving to the response message
+   */
+  async sendOpenCodeChatMessage(
+    sessionId: string, 
+    message: string, 
+    providerId: string, 
+    modelId: string
+  ): Promise<OpenCodeMessage> {
+    try {
+      return await invoke<OpenCodeMessage>("send_opencode_chat_message", {
+        sessionId,
+        message,
+        providerId,
+        modelId
+      });
+    } catch (error) {
+      console.error("Failed to send OpenCode chat message:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Connect to OpenCode event stream
+   * @returns Promise resolving when connected
+   */
+  async connectOpenCodeEventStream(): Promise<void> {
+    try {
+      return await invoke<void>("connect_opencode_event_stream");
+    } catch (error) {
+      console.error("Failed to connect to OpenCode event stream:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Execute OpenCode chat (similar to execute_claude_code but using OpenCode)
+   * @param projectPath - Project directory path
+   * @param prompt - Initial prompt
+   * @param model - Model ID to use
+   * @param provider - Provider ID (optional, defaults to "anthropic")
+   * @returns Promise resolving to the created session
+   */
+  async executeOpenCodeChat(
+    projectPath: string,
+    prompt: string,
+    model: string,
+    provider?: string
+  ): Promise<OpenCodeSession> {
+    try {
+      return await invoke<OpenCodeSession>("execute_opencode_chat", {
+        projectPath,
+        prompt,
+        model,
+        provider
+      });
+    } catch (error) {
+      console.error("Failed to execute OpenCode chat:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Continue an OpenCode conversation
+   * @param sessionId - Session ID
+   * @param prompt - Follow-up prompt
+   * @param model - Model ID to use
+   * @param provider - Provider ID (optional, defaults to "anthropic")
+   * @returns Promise resolving to the response message
+   */
+  async continueOpenCodeChat(
+    sessionId: string,
+    prompt: string,
+    model: string,
+    provider?: string
+  ): Promise<OpenCodeMessage> {
+    try {
+      return await invoke<OpenCodeMessage>("continue_opencode_chat", {
+        sessionId,
+        prompt,
+        model,
+        provider
+      });
+    } catch (error) {
+      console.error("Failed to continue OpenCode chat:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Abort an OpenCode session
+   * @param sessionId - Session ID to abort
+   * @returns Promise resolving to success status
+   */
+  async abortOpenCodeSession(sessionId: string): Promise<boolean> {
+    try {
+      return await invoke<boolean>("abort_opencode_session", { sessionId });
+    } catch (error) {
+      console.error("Failed to abort OpenCode session:", error);
       throw error;
     }
   }

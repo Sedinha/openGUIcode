@@ -4,6 +4,7 @@
 mod checkpoint;
 mod claude_binary;
 mod commands;
+mod opencode_integration;
 mod process;
 
 use checkpoint::state::CheckpointState;
@@ -34,6 +35,12 @@ use commands::mcp::{
     mcp_read_project_config, mcp_remove, mcp_reset_project_choices, mcp_save_project_config,
     mcp_serve, mcp_test_connection,
 };
+use commands::opencode::{
+    abort_opencode_session, connect_opencode_event_stream, continue_opencode_chat,
+    create_opencode_session, execute_opencode_chat, get_opencode_server_status,
+    get_opencode_session_messages, list_opencode_sessions, send_opencode_chat_message,
+    start_opencode_server, stop_opencode_server,
+};
 
 use commands::usage::{
     get_session_stats, get_usage_by_date_range, get_usage_details, get_usage_stats,
@@ -42,6 +49,7 @@ use commands::storage::{
     storage_list_tables, storage_read_table, storage_update_row, storage_delete_row,
     storage_insert_row, storage_execute_sql, storage_reset_database,
 };
+use opencode_integration::OpenCodeState;
 use process::ProcessRegistryState;
 use std::sync::Mutex;
 use tauri::Manager;
@@ -85,6 +93,9 @@ fn main() {
 
             // Initialize Claude process state
             app.manage(ClaudeProcessState::default());
+
+            // Initialize OpenCode integration state
+            app.manage(OpenCodeState::default());
 
             Ok(())
         })
@@ -195,6 +206,19 @@ fn main() {
             commands::slash_commands::slash_command_get,
             commands::slash_commands::slash_command_save,
             commands::slash_commands::slash_command_delete,
+            
+            // OpenCode Integration
+            start_opencode_server,
+            stop_opencode_server,
+            get_opencode_server_status,
+            create_opencode_session,
+            list_opencode_sessions,
+            get_opencode_session_messages,
+            send_opencode_chat_message,
+            connect_opencode_event_stream,
+            execute_opencode_chat,
+            continue_opencode_chat,
+            abort_opencode_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
